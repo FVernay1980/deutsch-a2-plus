@@ -9,38 +9,58 @@ if('speechSynthesis' in window){
   refreshGermanVoices();
   window.speechSynthesis.addEventListener?.('voiceschanged',refreshGermanVoices);
 }
-function speak(s){
+let audioLog=[],currentGermanUtterance=null,audioAttempt=0;
+function audioStatus(message){
+  audioLog.push(new Date().toLocaleTimeString('fr-FR')+' — '+message);
+  audioLog=audioLog.slice(-18);
+  const el=document.getElementById('audio-diagnostic');
+  if(el)el.textContent=audioLog.join('\n');
+}
+function audioVoices(){
+  try{return window.speechSynthesis.getVoices().filter(v=>/^de(?:-|$)/i.test(v.lang))}catch(e){audioStatus('Erreur voix : '+e.message);return []}
+}
+function speak(s,mode='auto'){
   if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){
-    alert('La synthèse vocale n’est pas disponible sur cet appareil.');return;
+    audioStatus('Synthèse vocale indisponible');return;
   }
   const synth=window.speechSynthesis;
-  // The utterance must be submitted directly from the user's tap on iOS.
-  synth.cancel();
-  refreshGermanVoices();
-  const u=new SpeechSynthesisUtterance(s);
-  u.lang='de-DE';u.rate=0.85;u.volume=1;
-  const voice=germanVoices.find(v=>v.lang.toLowerCase()==='de-de')||germanVoices[0];
-  if(voice)u.voice=voice;
-  const button=document.getElementById('speak');
-  if(button){button.textContent='🔊 Lecture…';button.disabled=true;}
-  const restore=()=>{const b=document.getElementById('speak');if(b){b.textContent='🔊 Écouter la phrase';b.disabled=false;}};
-  u.onend=restore;
-  u.onerror=e=>{
-    restore();
-    if(e.error!=='canceled'&&e.error!=='interrupted'){
-      alert('Lecture audio impossible ('+e.error+'). Essaie d’ouvrir le site dans Safari et de relancer la lecture.');
-    }
-  };
-  // Keep a live reference until iOS finishes speaking.
-  window.currentGermanUtterance=u;
-  synth.speak(u);
-  // Some iOS versions leave the speech engine paused after app switching.
-  if(synth.paused)synth.resume();
-  // Fail visibly instead of leaving the button stuck if no event arrives.
-  window.setTimeout(()=>{if(button&&button.disabled&& !synth.speaking){restore();}},1800);
+  const attempt=++audioAttempt;
+  audioStatus('Essai '+attempt+' : '+mode+' ; paused='+synth.paused+' ; speaking='+synth.speaking);
+  try{
+    synth.cancel();
+    const u=new SpeechSynthesisUtterance(s);
+    u.lang='de-DE';u.rate=1;u.pitch=1;u.volume=1;
+    const voices=audioVoices();
+    audioStatus('Voix allemandes : '+voices.length+(voices.length?' ; '+voices.map(v=>v.name+' ('+v.lang+')').join(', '):''));
+    if(mode==='force' && voices.length){
+      u.voice=voices.find(v=>v.lang.toLowerCase()==='de-de')||voices[0];
+      audioStatus('Voix choisie : '+u.voice.name);
+    }else{audioStatus('Voix : sélection automatique iOS (de-DE)')}
+    const button=document.getElementById('speak');
+    if(button)button.textContent='🔊 Lecture…';
+    const restore=()=>{if(attempt===audioAttempt){const b=document.getElementById('speak');if(b)b.textContent='🔊 Écouter la phrase'}};
+    u.onstart=()=>audioStatus('Événement : démarrage de la lecture');
+    u.onend=()=>{audioStatus('Événement : fin de lecture');restore()};
+    u.onerror=e=>{audioStatus('ERREUR : '+(e.error||'inconnue'));restore()};
+    u.onpause=()=>audioStatus('Événement : pause');
+    u.onresume=()=>audioStatus('Événement : reprise');
+    currentGermanUtterance=u;
+    window.currentGermanUtterance=u;
+    synth.speak(u);
+    if(synth.paused){synth.resume();audioStatus('Commande resume() envoyée')}
+    audioStatus('Commande speak() envoyée ; pending='+synth.pending);
+    setTimeout(()=>{
+      if(attempt!==audioAttempt)return;
+      audioStatus('Après 3 s : speaking='+synth.speaking+' ; pending='+synth.pending+' ; paused='+synth.paused);
+      if(!synth.speaking)restore();
+    },3000);
+  }catch(e){audioStatus('EXCEPTION : '+e.name+' : '+e.message)}
+}
+if('speechSynthesis' in window){
+  window.speechSynthesis.addEventListener('voiceschanged',()=>audioStatus('Voix chargées : '+audioVoices().length+' allemandes'));
 }
 function allQuestions(){return LESSONS.flatMap(l=>l.questions.map((q,i)=>({...q,key:l.id+'-'+i,lesson:l.title})))}function render(){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));if(tab==='learn'){screen.innerHTML='<h2>Choisis une leçon</h2><p class="muted">5 exercices par session · environ 5 minutes</p>'+LESSONS.map(l=>`<div class="card"><span class="tag">${l.questions.length} exercices</span><h2 style="margin-top:12px">${l.title}</h2><p class="muted">${l.description}</p><button class="primary" data-start="${l.id}">Commencer</button></div>`).join('')}else if(tab==='review'){const qs=allQuestions().filter(q=>state.mistakes[q.key]>0);screen.innerHTML=`<h2>Mes révisions</h2><div class="card"><div class="stat">${qs.length}</div><p class="muted">Question${qs.length>1?'s':''} à retravailler</p>${qs.length?'<button class="primary" id="reviewStart">Réviser maintenant</button>':'<p>Bravo ! Aucune erreur à réviser pour le moment.</p>'}</div>`}else{const pct=state.done?Math.round(state.correct/state.done*100):0;screen.innerHTML=`<h2>Ma progression</h2><div class="card"><div class="stat">${state.done}</div><p class="muted">Questions répondues</p></div><div class="card"><div class="stat">${pct}%</div><p class="muted">Réponses correctes</p><div class="progress"><div class="fill" style="width:${pct}%"></div></div></div><div class="card"><div class="stat">${state.sessions.length}</div><p class="muted">Sessions terminées</p></div><button class="secondary" id="reset">Réinitialiser mes données</button>`}}
-function start(qs,m){queue=qs;pos=0;score=0;mode=m;showQuestion()}function showQuestion(){selected='';checked=false;if(pos>=queue.length){state.sessions.push({date:new Date().toISOString(),mode,score,total:queue.length});save();screen.innerHTML=`<div class="card"><span class="tag">Session terminée</span><h2 style="margin-top:15px">Bien joué ! 🎉</h2><div class="stat">${score} / ${queue.length}</div><p class="muted">Tu peux revoir les erreurs dans l’onglet Réviser.</p><button class="primary" id="back">Retour à l’accueil</button></div>`;return}const q=queue[pos];screen.innerHTML=`<div class="card"><span class="tag">${escapeHTML(q.lesson)}</span><p class="muted">Question ${pos+1} sur ${queue.length}</p><div class="progress"><div class="fill" style="width:${pos/queue.length*100}%"></div></div><h2>${escapeHTML(q.prompt)}</h2><div class="sentence">${escapeHTML(q.sentence)}</div><button class="secondary" id="speak">🔊 Écouter la phrase</button><div id="choices">${q.type==='choice'?q.options.map((o,i)=>`<button class="option" data-option="${i}">${escapeHTML(o)}</button>`).join(''):'<p class="muted">Écris le mot manquant :</p><input type="text" id="typed" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ta réponse">'}</div><div id="feedback"></div><button class="primary" id="check" disabled>Vérifier</button></div>`}
+function start(qs,m){queue=qs;pos=0;score=0;mode=m;showQuestion()}function showQuestion(){audioLog=[];selected='';checked=false;if(pos>=queue.length){state.sessions.push({date:new Date().toISOString(),mode,score,total:queue.length});save();screen.innerHTML=`<div class="card"><span class="tag">Session terminée</span><h2 style="margin-top:15px">Bien joué ! 🎉</h2><div class="stat">${score} / ${queue.length}</div><p class="muted">Tu peux revoir les erreurs dans l’onglet Réviser.</p><button class="primary" id="back">Retour à l’accueil</button></div>`;return}const q=queue[pos];screen.innerHTML=`<div class="card"><span class="tag">${escapeHTML(q.lesson)}</span><p class="muted">Question ${pos+1} sur ${queue.length}</p><div class="progress"><div class="fill" style="width:${pos/queue.length*100}%"></div></div><h2>${escapeHTML(q.prompt)}</h2><div class="sentence">${escapeHTML(q.sentence)}</div><button class="secondary" id="speak">🔊 Écouter la phrase</button><div id="choices">${q.type==='choice'?q.options.map((o,i)=>`<button class="option" data-option="${i}">${escapeHTML(o)}</button>`).join(''):'<p class="muted">Écris le mot manquant :</p><input type="text" id="typed" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ta réponse">'}</div><details style="margin-top:15px"><summary style="color:#155e49;font-weight:700;cursor:pointer">Diagnostic audio V0.1.2</summary><p class="muted">Teste d'abord le bouton habituel, puis le mode voix forcée. Copie ensuite le journal.</p><button class="secondary" id="forceVoice" style="margin:5px 0">Tester une voix allemande explicite</button><button class="secondary" id="copyAudio" style="margin:5px 0">Copier le diagnostic</button><pre id="audio-diagnostic" style="white-space:pre-wrap;overflow-wrap:anywhere;background:#eef4ef;padding:10px;border-radius:8px;font-size:12px;max-height:240px;overflow:auto"></pre></details><div id="feedback"></div><button class="primary" id="check" disabled>Vérifier</button></div>`}
 function check(){const q=queue[pos];if(!selected||checked)return;checked=true;const ok=selected.trim().toLocaleLowerCase('de')===q.answer.toLocaleLowerCase('de');state.done++;if(ok){state.correct++;score++;delete state.mistakes[q.key]}else state.mistakes[q.key]=(state.mistakes[q.key]||0)+1;save();document.getElementById('feedback').innerHTML=`<div class="feedback ${ok?'':'bad'}"><strong>${ok?'✓ Richtig !':'À revoir'}</strong><p>Bonne réponse : <strong>${escapeHTML(q.answer)}</strong></p><p>${escapeHTML(q.explanation)}</p></div>`;document.querySelectorAll('.option').forEach(b=>b.disabled=true);const input=document.getElementById('typed');if(input)input.disabled=true;const btn=document.getElementById('check');btn.textContent=pos===queue.length-1?'Terminer':'Continuer';btn.disabled=false}
-document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.tab){tab=t.dataset.tab;render()}else if(t.dataset.start){const l=LESSONS.find(l=>l.id===t.dataset.start);start(l.questions.map((q,i)=>({...q,key:l.id+'-'+i,lesson:l.title})),l.title)}else if(t.id==='reviewStart'){start(allQuestions().filter(q=>state.mistakes[q.key]>0),'Révisions')}else if(t.id==='speak'){speak(queue[pos].audio)}else if(t.dataset.option!==undefined&&!checked){selected=queue[pos].options[Number(t.dataset.option)];document.querySelectorAll('.option').forEach(b=>b.classList.toggle('selected',b===t));document.getElementById('check').disabled=false}else if(t.id==='check'){if(checked){pos++;showQuestion()}else check()}else if(t.id==='back'){tab='learn';render()}else if(t.id==='reset'){if(confirm('Effacer toute ta progression sur cet iPhone ?')){state={done:0,correct:0,mistakes:{},sessions:[]};save();render()}}});document.addEventListener('input',e=>{if(e.target.id==='typed'){selected=e.target.value;document.getElementById('check').disabled=!selected.trim()}});render();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;if(t.dataset.tab){tab=t.dataset.tab;render()}else if(t.dataset.start){const l=LESSONS.find(l=>l.id===t.dataset.start);start(l.questions.map((q,i)=>({...q,key:l.id+'-'+i,lesson:l.title})),l.title)}else if(t.id==='reviewStart'){start(allQuestions().filter(q=>state.mistakes[q.key]>0),'Révisions')}else if(t.id==='speak'){speak(queue[pos].audio)}else if(t.id==='forceVoice'){speak(queue[pos].audio,'force')}else if(t.id==='copyAudio'){const log=audioLog.join('\n');if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(log).then(()=>audioStatus('Diagnostic copié')).catch(()=>window.prompt('Copie ce diagnostic :',log))}else window.prompt('Copie ce diagnostic :',log)}else if(t.dataset.option!==undefined&&!checked){selected=queue[pos].options[Number(t.dataset.option)];document.querySelectorAll('.option').forEach(b=>b.classList.toggle('selected',b===t));document.getElementById('check').disabled=false}else if(t.id==='check'){if(checked){pos++;showQuestion()}else check()}else if(t.id==='back'){tab='learn';render()}else if(t.id==='reset'){if(confirm('Effacer toute ta progression sur cet iPhone ?')){state={done:0,correct:0,mistakes:{},sessions:[]};save();render()}}});document.addEventListener('input',e=>{if(e.target.id==='typed'){selected=e.target.value;document.getElementById('check').disabled=!selected.trim()}});render();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 </script></body></html>
