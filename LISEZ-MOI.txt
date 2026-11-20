@@ -1,0 +1,16 @@
+DEUTSCH A2+ — Version 0.1
+
+Cette version contient 2 leçons de 5 exercices, la lecture audio en allemand, les révisions et les statistiques locales.
+
+INSTALLATION IPHONE :
+1. Héberger tous les fichiers de ce dossier ensemble sur un hébergement statique HTTPS (par exemple GitHub Pages ou Netlify).
+2. Ouvrir l'adresse HTTPS dans Safari sur l'iPhone.
+3. Dans Safari, toucher Partager puis « Sur l'écran d'accueil » / « Ajouter à l'écran d'accueil ».
+4. Ouvrir Deutsch A2+ depuis l'icône.
+5. Ouvrir l'application une première fois en ligne pour mettre en cache les fichiers. Les exercices fonctionneront ensuite hors ligne.
+
+AUDIO : la voix allemande utilise la synthèse vocale d'iOS. Sa disponibilité et son fonctionnement hors ligne dépendent des voix installées et des réglages de l'iPhone. Tester sur l'appareil.
+
+DONNEES : la progression est stockée localement dans le navigateur / la PWA. Elle peut être perdue si les données du site ou l'application sont supprimées. Aucune synchronisation ni sauvegarde distante.
+
+IMPORTANT : ouvrir index.html comme un fichier local ne permet pas l'installation PWA ; HTTPS est nécessaire. Le projet ne comprend pas d'hébergement public déjà configuré.
