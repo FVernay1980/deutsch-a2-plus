@@ -1,6 +1,96 @@
 {
   "version": "1.0.0",
   "language": "de",
+  "translation_language": "fr",
   "target_level": "A2-B2",
-  "words": []
-}
+  "editorial_note": "Sélection initiale rédigée pour le projet. Les entrées ne sont pas encore vérifiées ou reliées aux sources externes Wiktionary/Kaikki et Tatoeba.",
+  "words": [
+    {
+      "id": "DAY-001",
+      "word": "die Entscheidung",
+      "translation": "la décision",
+      "type": "noun",
+      "level": "A2",
+      "category": "everyday",
+      "example_de": "Das ist eine wichtige Entscheidung.",
+      "example_fr": "C’est une décision importante.",
+      "plural": "Entscheidungen",
+      "source": {
+        "kind": "editorial",
+        "reference": null,
+        "verified": false
+      },
+      "day": 1
+    },
+    {
+      "id": "DAY-002",
+      "word": "entscheiden",
+      "translation": "décider",
+      "type": "verb",
+      "level": "B1",
+      "category": "everyday",
+      "example_de": "Wir müssen heute entscheiden.",
+      "example_fr": "Nous devons décider aujourd’hui.",
+      "source": {
+        "kind": "editorial",
+        "reference": null,
+        "verified": false
+      },
+      "day": 1
+    },
+    {
+      "id": "DAY-003",
+      "word": "die Möglichkeit",
+      "translation": "la possibilité",
+      "type": "noun",
+      "level": "B1",
+      "category": "everyday",
+      "example_de": "Es gibt noch eine Möglichkeit.",
+      "example_fr": "Il reste une possibilité.",
+      "plural": "Möglichkeiten",
+      "source": {
+        "kind": "editorial",
+        "reference": null,
+        "verified": false
+      },
+      "day": 1
+    },
+    {
+      "id": "DAY-004",
+      "word": "trotzdem",
+      "translation": "quand même, malgré cela",
+      "type": "adverb",
+      "level": "B1",
+      "category": "everyday",
+      "example_de": "Es regnet, trotzdem gehen wir spazieren.",
+      "example_fr": "Il pleut, pourtant nous allons nous promener.",
+      "source": {
+        "kind": "editorial",
+        "reference": null,
+        "verified": false
+      },
+      "day": 1
+    },
+    {
+      "id": "DAY-005",
+      "word": "sich freuen",
+      "translation": "se réjouir",
+      "type": "verb",
+      "level": "A2",
+      "category": "everyday",
+      "example_de": "Ich freue mich auf das Wochenende.",
+      "example_fr": "Je me réjouis du week-end.",
+      "source": {
+        "kind": "editorial",
+        "reference": null,
+        "verified": false
+      },
+      "day": 1
+    },
+    {
+      "id": "DAY-006",
+      "word": "wahrscheinlich",
+      "translation": "probablement",
+      "type": "adverb",
+      "level": "A2",
+      "category": "everyday",
